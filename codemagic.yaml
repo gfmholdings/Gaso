@@ -131,10 +131,10 @@ workflows:
           set -uo pipefail
           cd "$CM_BUILD_DIR/app"
           TMP_DIR="$CM_BUILD_DIR/build/tmp"
-          mkdir -p build/export
+          mkdir -p "$CM_BUILD_DIR/build/export"
           if ! xcodebuild -exportArchive \
             -archivePath "$TMP_DIR/Gaso.xcarchive" \
-            -exportPath build/export \
+            -exportPath "$CM_BUILD_DIR/build/export" \
             -exportOptionsPlist scripts/ExportOptions.plist \
             > "$TMP_DIR/export.log" 2>&1; then
             echo "::error::xcodebuild -exportArchive FAILED — export.log:"
