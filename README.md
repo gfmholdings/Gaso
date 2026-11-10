@@ -60,6 +60,7 @@ Playwright is used only for browser tests.
 npm ci
 npm run check
 npm test
+npm run test:launcher
 npx playwright install chromium
 npm run test:browser
 ```
@@ -75,6 +76,11 @@ nonlocal request. It uses a synthetic key and controlled Google fixtures, so
 it makes no Google calls and incurs no API charges. JSON results and screenshots
 are written to the ignored `test-results/` directory. GitHub Actions runs syntax,
 core and browser regression checks and uploads browser artifacts.
+
+The optional `python3 test-prices.py FROM TO` diagnostic reads `PLACES_API_KEY`
+from the environment or a local `.env` file, then calls a Node.js helper that
+reuses the same corridor and price validation as the browser app. It makes
+billable live requests and is separate from the offline regression suites.
 
 ## Maps and native-app roadmap
 

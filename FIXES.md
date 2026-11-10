@@ -2,7 +2,8 @@
 
 The original two-file browser prototype was audited at `2f38601`. Its 34
 browser checks had 17 failures. The repaired browser app passes those checks
-plus seven additional cases: **41 browser checks and nine core tests pass**.
+plus seven additional cases: **41 browser checks, 11 JavaScript tests and four
+Python launcher tests pass**.
 
 ## Changes
 
@@ -25,10 +26,15 @@ plus seven additional cases: **41 browser checks and nine core tests pass**.
 - Labels are associated with inputs, status/errors are announced, empty results
   explain the outcome, and long provider names wrap on narrow mobile screens.
 - Unit/browser regression suites, a lockfile and GitHub Actions checks are included.
+- The concurrent key-safe Python diagnostic is preserved as a launcher. Its Node
+  helper reuses the validated corridor/price core instead of duplicating the old
+  sparse-sampling and missing-price bugs. Offline tests cover key handling and
+  provider failures without making live calls.
 
 ## Verification
 
-`npm run check`, `npm test`, and `CHROMIUM_PATH=/usr/bin/chromium npm run test:browser`
+`npm run check`, `npm test`, `npm run test:launcher`, and
+`CHROMIUM_PATH=/usr/bin/chromium npm run test:browser`
 pass locally. Chromium 156 runs the real UI and modules against mocked Google
 responses; no Google traffic, real credentials or API charges are used by tests.
 `npm audit` reports zero dependency advisories at verification time. Screenshots

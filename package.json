@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/core.test.js",
+    "test": "node --test tests/core.test.js tests/live-cli.test.js",
+    "test:launcher": "python3 -m unittest discover -s tests -p 'test_*.py'",
     "test:browser": "node tests/browser.cjs",
-    "check": "node --check app.js && node --check core.js"
+    "check": "node --check app.js && node --check core.js && node --check tools/live-prices.js"
   },
   "devDependencies": {
     "playwright": "1.62.1"
