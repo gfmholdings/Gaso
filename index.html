@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://places.googleapis.com; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>Gaso — Cheapest Gas Ahead (Prototype)</title>
 <style>
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#0f1419;color:#e8edf2}
@@ -14,7 +15,7 @@
   label{display:block;font-size:13px;color:#9fb0c0;margin:10px 0 4px}
   input[type=text],input[type=password],input[type=number]{width:100%;box-sizing:border-box;background:#0f1419;border:1px solid #33404f;border-radius:10px;color:#e8edf2;padding:10px;font-size:15px}
   input[type=range]{width:100%}
-  .row{display:flex;gap:12px}.row>div{flex:1}
+  .row{display:flex;gap:12px}.row>div{flex:1;min-width:0}
   .val{font-size:15px;color:#e8edf2}
   button{width:100%;background:#ffb300;color:#14100a;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;margin-top:6px}
   button:disabled{opacity:.5}
@@ -23,109 +24,56 @@
   .station:last-child{border-bottom:0}
   .price{font-size:22px;font-weight:800;color:#7ee787;white-space:nowrap}
   .price.none{color:#5b6b7a;font-size:14px;font-weight:600}
+  .station-details{min-width:0;flex:1;overflow-wrap:anywhere}
   .name{font-weight:700}
-  .addr,.age{font-size:12.5px;color:#9fb0c0}
+  .addr,.age,.distance{font-size:12.5px;color:#9fb0c0}
   .tag{display:inline-block;font-size:11px;font-weight:700;background:#27364a;color:#ffd54f;border-radius:6px;padding:2px 6px;margin-left:6px;vertical-align:2px}
   .stale{color:#ff9e64;font-weight:700}
   .best{border:1px solid #7ee787;border-radius:10px;padding:12px;margin-bottom:6px}
+  button.secondary{background:#27364a;color:#e8edf2}
   .err{color:#ff7b72;font-size:13.5px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>⛽ Gaso</h1>
-  <div class="sub">Prototype — takes its route from your maps app and your fuel &amp; mileage from the car itself.</div>
+  <div class="sub">Prototype — compare reported gas prices near an approximate corridor between two addresses.</div>
 
   <div class="card">
-    <h2>🚗 Vehicle — read from the car</h2>
-    <div class="note">In the app, fuel level and MPG come from the vehicle itself over CarPlay / Android Auto — nothing to type. This prototype simulates that feed so you can see how the math works.</div>
-    <label>Fuel level: <span class="val" id="fuelVal">35%</span></label>
+    <h2>🚗 Vehicle — estimated range</h2>
+    <div class="note">Enter your vehicle values to estimate fuel range. This prototype does not connect to your car. Actual range varies; keep a fuel reserve.</div>
+    <label for="fuel">Fuel level: <span class="val" id="fuelVal">35%</span></label>
     <input type="range" id="fuel" min="2" max="100" value="35">
     <div class="row">
-      <div><label>Tank size (gal)</label><input type="number" id="tank" value="16" min="5" max="40" step="0.5"></div>
-      <div><label>MPG (from car)</label><input type="number" id="mpg" value="28" min="5" max="80" step="1"></div>
+      <div><label for="tank">Tank size (gal)</label><input type="number" id="tank" value="16" min="5" max="40" step="0.5"></div>
+      <div><label for="mpg">MPG</label><input type="number" id="mpg" value="28" min="5" max="80" step="1"></div>
     </div>
-    <label>Range remaining: <span class="val" id="rangeVal">—</span></label>
+    <p class="note">Estimated range: <span class="val" id="rangeVal">—</span></p>
   </div>
 
   <div class="card">
-    <h2>🗺️ Route — from Maps</h2>
-    <div class="note">In the app, the active route is taken from the navigation already running in Google Maps / Apple Maps. Here, enter the same start and destination.</div>
-    <label>From</label><input type="text" id="from" value="282 Poquonock Ave, Windsor, CT">
-    <label>To</label><input type="text" id="to" value="Fountain Village, Manchester, CT">
+    <h2>🗺️ Approximate corridor</h2>
+    <div class="note">Enter two addresses. This searches a straight-line corridor, not the roads in Google Maps. Check your actual road route, station access and fuel needs before driving.</div>
+    <label for="from">From</label><input type="text" id="from" value="282 Poquonock Ave, Windsor, CT">
+    <label for="to">To</label><input type="text" id="to" value="Fountain Village, Manchester, CT">
   </div>
 
   <div class="card">
     <h2>🔑 Live prices (Google Places)</h2>
-    <label>Places API key — stays in this tab only, never saved</label>
-    <input type="password" id="key" placeholder="Paste API key">
-    <button id="go">Check live prices on my route</button>
-    <div id="status" class="note" style="margin-top:8px"></div>
-    <div id="err" class="err"></div>
+    <label for="key">Places API key — stays in this tab only, never saved</label>
+    <input type="password" id="key" placeholder="Paste API key" autocomplete="off" spellcheck="false">
+    <button id="go">Check prices in this corridor</button>
+    <button id="cancel" class="secondary" type="button" hidden>Cancel search</button>
+    <p class="note">Searches may use up to 82 billable Places requests. Trips over 316 straight-line miles must be searched in shorter sections. Provider coverage is not exhaustive.</p>
+    <div role="status" aria-live="polite" id="status" class="note" style="margin-top:8px"></div>
+    <div role="alert" id="err" class="err"></div>
   </div>
 
-  <div id="results"></div>
+  <div id="results" aria-label="Station results" aria-busy="false"></div>
 
-  <div class="note" style="margin-top:16px">Rules: everyone sees the same price-ranked list. Club stations are tagged, never personalized. A price older than 48 hours is flagged stale. A station Google has no price for is listed last as “No live price” — never estimated.</div>
+  <div class="note" style="margin-top:16px">Returned USD prices are ranked lowest first; this is not a guarantee of the cheapest station. Club prices may require membership. Prices over 48 hours old are flagged stale; unknown freshness is labeled unverified. Missing, invalid or non-USD prices are listed last as “No live price”. Confirm the current price and pump unit at the station. Driving reachability is unverified.</div>
 </div>
 
-<script>
-const $ = id => document.getElementById(id);
-function rangeMi(){ const g = $('tank').value * $('fuel').value/100; return g * $('mpg').value; }
-function updRange(){ $('fuelVal').textContent = $('fuel').value + '%'; $('rangeVal').textContent = rangeMi().toFixed(0) + ' miles'; }
-['fuel','tank','mpg'].forEach(id => $(id).addEventListener('input', updRange)); updRange();
-
-const CLUB = [ {re:/costco/i, tag:'Club membership'}, {re:/bj'?s/i, tag:"Club membership · two tiers: Club and Club+ (Club+ earns an extra 5¢/gal off)"}, {re:/sam'?s club/i, tag:'Club membership'} ];
-function clubTag(name){ for(const c of CLUB) if(c.re.test(name)) return c.tag; return null; }
-function haversine(a,b){ const R=3958.8, dLa=(b.lat-a.lat)*Math.PI/180, dLo=(b.lng-a.lng)*Math.PI/180; const h=Math.sin(dLa/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
-
-async function places(path, body, mask, key){
-  const r = await fetch('https://places.googleapis.com/v1/' + path, {method:'POST', headers:{'Content-Type':'application/json','X-Goog-Api-Key':key,'X-Goog-FieldMask':mask}, body: JSON.stringify(body)});
-  if(!r.ok) throw new Error('Places API ' + r.status + ': ' + (await r.text()).slice(0,200));
-  return r.json();
-}
-async function geocode(q, key){
-  const res = await places('places:searchText', {textQuery:q, maxResultCount:1}, 'places.location,places.displayName', key);
-  if(!res.places || !res.places.length) throw new Error('Could not find: ' + q);
-  const l = res.places[0].location; return {lat:l.latitude, lng:l.longitude};
-}
-
-$('go').addEventListener('click', async () => {
-  const key = $('key').value.trim(); $('err').textContent=''; $('results').innerHTML='';
-  if(!key){ $('err').textContent = 'Paste your Places API key first.'; return; }
-  $('go').disabled = true; $('status').textContent = 'Reading route and live prices…';
-  try{
-    const a = await geocode($('from').value, key), b = await geocode($('to').value, key);
-    // Sample points along the route line — the app uses the real route polyline from Maps.
-    const pts = []; for(let i=0;i<5;i++){ const t=i/4; pts.push({lat:a.lat+(b.lat-a.lat)*t, lng:a.lng+(b.lng-a.lng)*t}); }
-    const seen = new Map();
-    for(const p of pts){
-      const res = await places('places:searchText', {textQuery:'gas station', maxResultCount:20, locationBias:{circle:{center:{latitude:p.lat, longitude:p.lng}, radius:6000}}}, 'places.id,places.displayName,places.formattedAddress,places.location,places.fuelOptions', key);
-      for(const pl of (res.places||[])) if(!seen.has(pl.id)) seen.set(pl.id, pl);
-    }
-    const range = rangeMi(); const rows = [];
-    for(const pl of seen.values()){
-      const loc = {lat:pl.location.latitude, lng:pl.location.longitude};
-      const distOff = Math.min(...pts.map(p=>haversine(p,loc)));
-      if(distOff > 3) continue; // within ~3 mi of the route line
-      let price=null, upd=null;
-      for(const f of ((pl.fuelOptions||{}).fuelPrices||[])) if(f.type==='REGULAR_UNLEADED'){ const pr=f.price||{}; price = parseFloat(pr.units||0) + (pr.nanos||0)/1e9; upd = f.updateTime; }
-      rows.push({name:(pl.displayName||{}).text||'Gas station', addr:pl.formattedAddress||'', price, upd});
-    }
-    rows.sort((x,y)=> (x.price===null)-(y.price===null) || (x.price||0)-(y.price||0));
-    $('status').textContent = rows.length + ' stations near your route · your range is ' + range.toFixed(0) + ' miles — all are within reach.';
-    let html = '<div class="card"><h2>Ranked — cheapest first</h2>';
-    rows.forEach((s,i)=>{
-      const tag = clubTag(s.name);
-      let age = '', stale = false;
-      if(s.upd){ const hrs = (Date.now() - new Date(s.upd).getTime())/36e5; stale = hrs > 48; age = 'Price updated ' + new Date(s.upd).toLocaleString(); }
-      html += '<div class="' + (i===0 && s.price!==null ? 'best' : 'station') + '"><div><span class="name">' + s.name + '</span>' + (tag?'<span class="tag">'+tag+'</span>':'') + '<div class="addr">' + s.addr + '</div><div class="age">' + (s.price!==null ? age : 'Google has no live price for this station') + (stale?' · <span class="stale">STALE PRICE</span>':'') + '</div></div><div class="price' + (s.price===null?' none':'') + '">' + (s.price!==null ? '$'+s.price.toFixed(2) : 'No live price') + '</div></div>';
-    });
-    html += '</div>';
-    $('results').innerHTML = html;
-  }catch(e){ $('err').textContent = e.message; $('status').textContent=''; }
-  $('go').disabled = false;
-});
-</script>
+<script type="module" src="./app.js"></script>
 </body>
 </html>
