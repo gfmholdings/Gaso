@@ -6,3 +6,7 @@ test-results/
 !.env.example
 __pycache__/
 *.pyc
+credentials/
+app/node_modules/
+app/ios/
+app/.expo/

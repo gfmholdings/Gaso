@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Gaso",
+    "slug": "gaso",
+    "scheme": "gaso",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "bundleIdentifier": "app.gaso.ios",
+      "supportsTablet": false,
+      "appleTeamId": "8H56KM6SCW",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "Gaso"
+      }
+    },
+    "plugins": ["expo-status-bar"]
+  }
+}
