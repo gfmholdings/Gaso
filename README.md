@@ -1,4 +1,4 @@
-# Cheapest Gas Ahead (working title)
+# Gaso — Cheapest Gas Ahead
 
 A phone app that rides alongside the maps app you're already using and finds
 the cheapest gas on your way — before you need it.
